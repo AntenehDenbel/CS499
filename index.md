@@ -4,7 +4,7 @@ title: "CS 499 Computer Science ePortfolio"
 
 # Computer Science ePortfolio
 
-**[Anteneh Denbel]**
+**Anteneh Denbel**
 Bachelor of Science in Computer Science — Southern New Hampshire University
 
 
