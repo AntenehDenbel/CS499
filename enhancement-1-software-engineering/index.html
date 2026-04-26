@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Enhancement One · Software Design and Engineering · CS 499</title>
+<meta name="description" content="MVVM refactor with Repository pattern. Software engineering enhancement to a Warehouse Inventory Management Android application.">
+<link rel="stylesheet" href="../styles.css">
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="brand"><a href="../" style="color: inherit;">Anteneh Denbel · CS 499 ePortfolio</a></div>
+  <div class="links">
+    <a href="../">Home</a>
+    <a href="../professional-self-assessment/">Self-Assessment</a>
+    <a href="../code-review/">Code Review</a>
+    <a href="../#enhancements" class="current">Enhancements</a>
+    <a href="https://github.com/AntenehDenbel/CS499" target="_blank" rel="noopener" class="cta">GitHub</a>
+  </div>
+</nav>
+
+<header class="hero compact">
+  <div class="eyebrow">Enhancement 1 · Module Three</div>
+  <h1>Software Design and Engineering</h1>
+  <p class="tagline">MVVM refactor with Repository pattern, Kotlin migration, and the unit-test foundation that makes the next two enhancements possible.</p>
+</header>
+
+<main class="narrow article">
+
+  <div class="article-actions" style="margin-bottom: 32px;">
+    <a href="https://github.com/AntenehDenbel/CS499/tree/enhancement-1-software-engineering" target="_blank" rel="noopener">📂 View enhanced code</a>
+    <a href="https://github.com/AntenehDenbel/CS499/tree/original" target="_blank" rel="noopener">📂 View original code</a>
+  </div>
+
+  <div class="card muted" style="margin-bottom: 40px;">
+    <div class="meta">
+      <span class="pill outcomes">Outcomes 1, 2, 4</span>
+      <span class="pill">Java + Kotlin</span>
+      <span class="pill">Android · MVVM</span>
+      <span class="pill">8 Unit Tests</span>
+    </div>
+    <p style="margin: 0;">
+      <strong>The narrative below is the full Milestone Two submission.</strong> It describes the
+      starting state of the artifact, the specific weaknesses the enhancement targeted, the
+      changes made, the course outcomes addressed, the deviation from the Module One plan, and
+      three challenges encountered during implementation.
+    </p>
+  </div>
+
+  <div class="article-body">
+
+    <h2>Artifact Background</h2>
+
+    <p>
+      The artifact is a Warehouse Inventory Management application I built as the Project Three
+      final deliverable in CS 360 (Mobile Architecture and Programming) earlier in my degree.
+      It is a native Android application written primarily in Java, with a small amount of
+      Kotlin used for the Jetpack Compose theme files that came with the project template. The
+      original version supported account creation and login, persistent storage of inventory
+      items in a local Room database, a two column grid of item cards rendered with a
+      RecyclerView, a bottom sheet for adding items, a second bottom sheet for adjusting
+      quantity with plus and minus buttons, and a low stock notification path that fired an SMS
+      alert (or a toast on the emulator) whenever any item reached a quantity of zero. The
+      application targets Android 7.0 and above and uses Material Components for its visual
+      style.
+    </p>
+
+    <p>
+      The version I am submitting for Milestone Two preserves all of that user facing
+      functionality and re-architects the code underneath it. The grid still works the same way
+      from a user&rsquo;s perspective. What changed is everything behind it.
+    </p>
+
+    <h2>Why This Artifact</h2>
+
+    <p>
+      I chose this artifact for the software design and engineering category because it had
+      three concrete weaknesses that a graduating computer science student should be able to
+      recognize and fix, and because correcting them gives me a single project I can carry
+      through all three Capstone enhancement categories instead of three disconnected ones.
+    </p>
+
+    <p>
+      The first weakness was that the original <code>InventoryActivity</code> owned far too many
+      responsibilities for a single class. In its starting state it directly held a handle to
+      the Room database, observed LiveData queries, spawned a fresh background thread on every
+      database write using a raw <code>new Thread</code> call, inflated dialogs, handled runtime
+      SMS permission prompts, and bound data into the RecyclerView, all in the same file. The
+      second weakness was a quiet correctness bug in the <code>InventoryAdapter</code>. The
+      delete button removed an item from the adapter&rsquo;s in-memory list and called
+      <code>notifyItemRemoved</code> on the RecyclerView, which made the card disappear from the
+      screen, but it never actually called the DAO. The deletion only looked like it worked.
+      The third weakness was that <code>AppDatabase</code> was built with
+      <code>allowMainThreadQueries</code> enabled, which is an anti pattern that papers over the
+      exception Room would normally throw when a query accidentally runs on the UI thread.
+    </p>
+
+    <h2>What I Built</h2>
+
+    <p>
+      The enhanced version addresses all three. I introduced an MVVM structure with a Repository
+      layer between the database and the UI. I created two ViewModel classes,
+      <code>InventoryViewModel</code> and <code>LoginViewModel</code>, both written in Kotlin
+      to make good on the language migration I committed to in my Module One plan. I extracted
+      database access into an <code>InventoryRepository</code> interface with a Room-backed
+      implementation called <code>RoomInventoryRepository</code>, and I did the same for users
+      with <code>UserRepository</code> and <code>RoomUserRepository</code>. I built a small
+      <code>InventoryApplication</code> class that constructs the database and the repositories
+      once at process startup and exposes them to the activities, which gives the activities
+      their dependencies instead of forcing them to construct their own. The two activities are
+      now substantially smaller and only know how to read user input, call methods on their
+      ViewModel, and observe LiveData for results. The delete button on each card now routes
+      through a listener interface up to the activity, into the ViewModel, into the repository,
+      and finally to the DAO, so deletes actually persist. I removed the
+      <code>allowMainThreadQueries</code> call so Room will catch threading mistakes at
+      development time. I replaced every raw <code>new Thread</code> call with a single thread
+      executor owned by the repository, which serializes writes against the SQLite file in a
+      deterministic order. I added detailed Javadoc and KDoc comments on every new class
+      explaining its role and why it exists. I also wrote a suite of eight unit tests against
+      the <code>InventoryViewModel</code> using a hand built <code>FakeInventoryRepository</code>,
+      including a test that specifically verifies the delete bug is fixed.
+    </p>
+
+    <p>
+      The overall effect is that the project now has the shape a working software engineer would
+      expect to find. The activities are thin and focused on their one Android specific job.
+      Business logic lives in classes that can be tested without an emulator. Persistence sits
+      behind an interface that I can swap for a Firestore backed implementation in Module Five
+      without touching a single line of UI code.
+    </p>
+
+    <h2>Course Outcomes Addressed</h2>
+
+    <p>
+      In Module One I planned this enhancement to address Course Outcomes 1, 2, and 4. I believe
+      I met all three, with the caveat that the full case for these outcomes is reinforced by
+      the work still to come in Modules Four and Five and by the ePortfolio as a whole.
+    </p>
+
+    <h3>Outcome 1: Collaborative Environments</h3>
+    <p>
+      The restructured project has a clear package layout with separate folders for data,
+      repository, viewmodel, and UI code. Each new class carries documentation that explains
+      what it does and why, including notes on which parts of the architecture exist
+      specifically to support later enhancements. A new contributor joining this project would
+      be able to find the database code in the data package, the business rules in the
+      viewmodel package, and the UI in the activity classes, without needing me to walk them
+      through it.
+    </p>
+
+    <h3>Outcome 2: Professional-Quality Communication</h3>
+    <p>
+      The work itself is the communication. The Javadoc on classes like
+      <code>InventoryRepository</code> explicitly explains that the interface exists to allow a
+      future swap to a cloud database, the comment on <code>AppDatabase</code> calls out the
+      removal of <code>allowMainThreadQueries</code> and why it matters, and the comment on the
+      <code>User</code> entity is honest about the fact that the password field still stores
+      plaintext and that fixing it is intentionally deferred to the security focused enhancement
+      in Module Five. This narrative document itself is part of that outcome.
+    </p>
+
+    <h3>Outcome 4: Well-Founded and Innovative Techniques</h3>
+    <p>
+      The enhancement adopts the modern Android architecture stack, ViewModel, LiveData, and a
+      Repository sitting behind an interface, in place of the activity centric pattern the
+      original code used. It also introduces unit testing, which the original project did not
+      have at all (the only tests in the starting artifact were the placeholder ones Android
+      Studio generates by default).
+    </p>
+
+    <p>
+      I do not believe this milestone fully addresses Outcomes 3 or 5 on its own. Outcome 3
+      (algorithmic principles and trade offs) is the explicit focus of the Module Four
+      enhancement, where I will replace the application&rsquo;s linear scans with a Trie, a hash
+      map, and a min heap. Outcome 5 (security mindset) is the explicit focus of the Module
+      Five enhancement, where I will replace plaintext passwords with BCrypt hashes, add role
+      based access control, and introduce an immutable audit log. I called out both of those
+      gaps deliberately in the comments on the User entity so that a reviewer reading the code
+      can see I am aware of them and have a plan.
+    </p>
+
+    <h2>Deviation from the Module One Plan</h2>
+
+    <p>
+      One change to my outcome plan compared with what I wrote in Module One: I had originally
+      proposed to use Hilt for dependency injection. Once I started working on it, I decided
+      the simpler approach of a custom Application class that constructs the repositories at
+      startup was a better fit for a school project. It accomplishes the same architectural
+      goal, which is that the activities receive their dependencies instead of constructing
+      their own, and it does so without adding a Gradle plugin and several layers of annotation
+      that I would then have to defend. I would rather understand every line of my own code
+      than use a framework I am not as proficient in. I think that is a defensible engineering
+      decision and I believe it actually strengthens the case for Outcome 4, since it shows
+      judgment about which tools are well founded for the problem at hand rather than reaching
+      for the most popular library.
+    </p>
+
+    <h2>Reflections and Challenges</h2>
+
+    <p>
+      The enhancement turned out to be a much better learning experience than I expected, mostly
+      because of the things that did not go smoothly. I will describe three of them.
+    </p>
+
+    <h3>Challenge One: The Project Would Not Build</h3>
+    <p>
+      The first challenge was that the project would not build at all after I made the necessary
+      changes for this module. The error pointed at the Android manifest being missing. After
+      some back and forth I figured out that I had made the contents of my new app level
+      <code>build.gradle</code> into the project root <code>build.gradle</code> as well, which
+      left the project root looking to Gradle like a misconfigured Android module. The fix was a
+      five line file at the project root that does nothing but declare the plugins. The lesson
+      was that two files with the same name in different folders are not the same file, and that
+      Gradle errors that complain about missing inputs are often complaining about the wrong
+      configuration rather than a missing artifact.
+    </p>
+
+    <h3>Challenge Two: A Test Dependency That Disappeared</h3>
+    <p>
+      The second challenge was that my unit test file refused to compile because it could not
+      find the <code>InstantTaskExecutorRule</code> class. I had added the dependency, the
+      version catalog entry was correct, the Gradle sync was clean, and the tests still failed.
+      After narrowing it down with a dependency tree command I realized that the line declaring
+      <code>testImplementation libs.androidx.arch.core.testing</code> had silently been deleted
+      from <code>app/build.gradle</code> during one of the editing sessions. The dependency was
+      named correctly in the catalog but never actually requested. Adding the missing line fixed
+      it immediately. The lesson was that &ldquo;Gradle sync succeeded&rdquo; only means the
+      configuration parsed, not that it parsed the way you wanted it to, and the most direct way
+      to confirm what the build actually has access to is to print the dependency tree.
+    </p>
+
+    <h3>Challenge Three: A Bug That Was Not a Bug</h3>
+    <p>
+      The third challenge was the most interesting. After everything compiled and tests passed,
+      I ran the app and tapped the delete button. The card disappeared, exactly as it had in the
+      original, and when I reopened the app the item was back. I was certain my refactor had
+      quietly recreated the bug it was supposed to fix. I added log statements at every layer,
+      watched the click reach the Activity, watched the Activity call the ViewModel, watched the
+      ViewModel call the repository, watched the repository&rsquo;s executor run, watched the
+      DAO return, and finally watched a follow up query confirm the row was actually gone from
+      the database. So delete was working. The &ldquo;bug&rdquo; was that I had been hitting
+      the green Run button in Android Studio between tests, and each Run reinstalls the app,
+      which on this configuration wipes the local database. The hammer I kept seeing reappear
+      was a different hammer that I was retyping each time. The actual fix was to swipe the app
+      away from the emulator&rsquo;s recents view and relaunch it from the app drawer instead.
+      Once I did that, delete persisted correctly. The lesson was that when something looks like
+      a logic bug, the first question is whether the test conditions are actually what I think
+      they are, because a misunderstanding of the environment can perfectly mimic a
+      misunderstanding of the code.
+    </p>
+
+  </div>
+
+  <div class="page-nav">
+    <a href="../" class="prev">
+      <span class="label">← Back to</span>
+      <span class="title">Portfolio Home</span>
+    </a>
+    <a href="../enhancement-2-algorithms/" class="next">
+      <span class="label">Next Enhancement →</span>
+      <span class="title">Algorithms and Data Structures</span>
+    </a>
+  </div>
+
+</main>
+
+<footer>
+  <div>CS 499 Computer Science Capstone · Anteneh Denbel</div>
+  <div><a href="../">Back to portfolio home</a> · <a href="https://github.com/AntenehDenbel/CS499">GitHub</a></div>
+</footer>
+
+</body>
+</html>

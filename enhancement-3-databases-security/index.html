@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Enhancement Three · Databases and Security · CS 499</title>
+<meta name="description" content="Server-mediated architecture with PBKDF2, role-based access control, and an append-only audit log. Database and security enhancement to a Warehouse Inventory Management Android application.">
+<link rel="stylesheet" href="../styles.css">
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="brand"><a href="../" style="color: inherit;">Anteneh Denbel · CS 499 ePortfolio</a></div>
+  <div class="links">
+    <a href="../">Home</a>
+    <a href="../professional-self-assessment/">Self-Assessment</a>
+    <a href="../code-review/">Code Review</a>
+    <a href="../#enhancements" class="current">Enhancements</a>
+    <a href="https://github.com/AntenehDenbel/CS499" target="_blank" rel="noopener" class="cta">GitHub</a>
+  </div>
+</nav>
+
+<header class="hero compact">
+  <div class="eyebrow">Enhancement 3 · Module Five</div>
+  <h1>Databases and Security</h1>
+  <p class="tagline">A server-mediated architecture with PBKDF2 password hashing, role-based access control, and an append-only audit log defended by multiple layers.</p>
+</header>
+
+<main class="narrow article">
+
+  <div class="article-actions" style="margin-bottom: 32px;">
+    <a href="https://github.com/AntenehDenbel/CS499/tree/enhancement-3-databases-security" target="_blank" rel="noopener">📂 View enhanced code</a>
+    <a href="https://github.com/AntenehDenbel/CS499/tree/enhancement-2-algorithms" target="_blank" rel="noopener">📂 View previous milestone</a>
+  </div>
+
+  <div class="card muted" style="margin-bottom: 40px;">
+    <div class="meta">
+      <span class="pill outcomes">Outcomes 3, 4, 5</span>
+      <span class="pill">Java + Kotlin</span>
+      <span class="pill">PBKDF2-HMAC-SHA-256</span>
+      <span class="pill">RBAC · Audit Log</span>
+      <span class="pill">40 Unit Tests</span>
+    </div>
+    <p style="margin: 0;">
+      <strong>The narrative below is the full Milestone Four submission.</strong> It explains
+      the security weaknesses targeted, the components that landed, the substantial deviation
+      from the Module One plan and the reasoning behind each substitution (Firestore became
+      in-process server, BCrypt became PBKDF2, Firestore rules became layered defense), the
+      three course outcomes addressed, and three challenges encountered during implementation.
+    </p>
+  </div>
+
+  <div class="article-body">
+
+    <h2>Artifact Background</h2>
+
+    <p>
+      The artifact is the Warehouse Inventory Management Android application I originally built
+      in CS 360. It is a Java and Kotlin app that allows a logged in user to track items in a
+      warehouse, see which items are out of stock, add or remove items, and adjust quantities.
+      Through the previous milestones I rebuilt it under an MVVM and Repository structure
+      during Milestone Two and added a custom search index built on a Trie and a min heap
+      during Milestone Three so that lookups against thousands of items run in milliseconds.
+    </p>
+
+    <p>
+      For this milestone the database layer itself was the focus. The original artifact stored
+      user passwords in plain text inside the SQLite users table, granted every authenticated
+      user identical privileges, and kept no record of who performed which actions. The Module
+      Five enhancement rebuilds the data and security layers around a server mediated
+      architecture with hashed passwords, role based access control, and an append only audit
+      log, while leaving the UI and search index from the previous milestones untouched.
+    </p>
+
+    <h2>Why This Artifact</h2>
+
+    <p>
+      I selected this artifact for the third enhancement because the database and security work
+      here carries the most evidence of growth. The original application would have failed any
+      halfway careful security review, so there was a real ceiling to lift rather than a polish
+      job. The work also aligned with the course outcomes I felt weakest on going into the
+      capstone, particularly the security mindset outcome.
+    </p>
+
+    <p>
+      Specifically, the enhancement demonstrates several capabilities I wanted on the record.
+      It shows that I can take an interface boundary I established in an earlier milestone,
+      namely the Repository interface from Milestone Two, and swap the implementation behind
+      it without breaking the UI or the ViewModel layer. It shows that I can model a security
+      architecture around a real threat surface rather than a single feature. It also shows
+      that I can hold the line on those security properties under test, which the new unit test
+      suite verifies.
+    </p>
+
+    <h2>What I Built</h2>
+
+    <p>
+      The components that landed are a Kotlin <code>User</code> entity that no longer holds a
+      plaintext password, a <code>PasswordHasher</code> object that runs PBKDF2 with HMAC SHA
+      256 over a per user salt at the OWASP recommended iteration count, a <code>Session</code>
+      abstraction that holds the currently authenticated user, an <code>InventoryServer</code>
+      class that plays the role a network backend would play and gates every mutation on
+      authentication and role, an <code>AuditEntry</code> table and DAO that records every
+      change with actor, timestamp, and before and after snapshots, and a
+      <code>RemoteInventoryRepository</code> that adapts the existing Repository interface to
+      the new server. Forty new unit tests cover the security properties end to end.
+    </p>
+
+    <h2>Deviation from the Module One Plan</h2>
+
+    <p>
+      The Module One plan named Firebase Firestore as the destination for the database
+      migration, BCrypt as the password hasher, and Firestore security rules as the mechanism
+      for enforcing the append only property of the audit log. None of those three choices
+      landed in the final implementation. I want to be honest about why, because the changes
+      were not the result of the plan being wrong but the result of new information surfacing
+      once I started building.
+    </p>
+
+    <h3>Substitution One: Firestore Became In-Process Server</h3>
+
+    <p>
+      I was genuinely eager to use Firebase. I had been using it in a personal project of mine
+      and the developer experience was good, the realtime listener model was a clean fit for
+      the LiveData observers I already had in the app, and the offline first behavior was
+      largely free out of the box. When I started writing the code for this milestone I ran
+      into two practical problems. The first is that asking a professor to grade an application
+      that requires a Firebase project, an API key, and a service account JSON introduces a
+      real problem into the grading process. The grader would need to either configure their
+      own Firebase project or trust mine, and neither path is good. The second is that Firebase
+      free tier accounts are reclaimed if they sit idle, which means the artifact would not be
+      particularly long lived as a portfolio piece. A year from now a recruiter clicking the
+      link in my portfolio could easily land on a dead application.
+    </p>
+
+    <p>
+      I also considered the database options listed in the Module One assignment instructions,
+      specifically MySQL and MongoDB. Both are server databases, meaning they run as separate
+      processes and listen on a network port, and neither runs on an Android device directly.
+      Integrating either one would have required spinning up a real backend service, deploying
+      it somewhere, and rewriting the application to talk to it over HTTPS. That is roughly a
+      week of additional work, and importantly it would not have changed the security
+      architecture I was building. The authentication, authorization, and audit logic would
+      have looked identical to what I shipped. The only thing that would have changed is the
+      transport. Given that the rubric for the Databases category is about demonstrating
+      advanced database concepts rather than mandating a specific database product, I judged
+      that the better use of the time was to deepen the security work rather than to relocate
+      the same security work onto a different storage engine.
+    </p>
+
+    <p>
+      I switched to SQLite, with which I had real shipping experience from a previously
+      released product, and rebuilt the security architecture around it. The trade off I
+      accepted is that the database itself no longer enforces the security properties from the
+      wire side. To compensate I built the <code>InventoryServer</code> class to enforce those
+      properties in code, on its own thread, behind an API boundary the rest of the application
+      cannot reach around. The architecture diagram looks the same as it would have looked with
+      Firestore in the role of the server. The transport differs but the security properties do
+      not, and porting it to a real network service later would primarily mean swapping the
+      executor for a Retrofit client.
+    </p>
+
+    <h3>Substitution Two: BCrypt Became PBKDF2</h3>
+
+    <p>
+      For password hashing I had planned to use BCrypt. PBKDF2 with HMAC SHA 256 ended up being
+      the better fit because it ships with the Java standard library through
+      <code>SecretKeyFactory</code>, so I did not need to add a third party dependency for
+      password hashing on a school project. PBKDF2 is also the algorithm NIST Special
+      Publication 800 63B recommends for password storage, with the same security properties I
+      cared about. It is salted with a per user 16 byte salt, slow with a configurable
+      iteration count set to 120,000 which is the OWASP floor as of 2023, and verified with a
+      constant time comparison so a timing side channel cannot leak how many leading bytes of
+      the hash an attacker has guessed correctly. I documented all of this in the doc comment
+      on the <code>PasswordHasher</code> class so that anyone reading the code understands the
+      trade off was deliberate.
+    </p>
+
+    <h3>Substitution Three: Firestore Rules Became a Layered Defense</h3>
+
+    <p>
+      For the audit log immutability I had planned to rely on the Firestore rule that denies
+      all writes to the <code>auditLog</code> collection. SQLite has no equivalent mechanism,
+      so I used the next best thing. The <code>AuditDao</code> deliberately declares no
+      <code>Update</code> or <code>Delete</code> annotated methods. Nothing in the ViewModel,
+      the repository, or the UI can amend or remove an existing audit row because no API
+      surface exists for it. The audit log can grow but it cannot be edited. To keep that
+      property honest I wrote a reflection based test that scans <code>AuditDao</code> for any
+      method whose name starts with <code>update</code>, <code>delete</code>, or
+      <code>remove</code>, and fails the build if one ever appears. A future change that breaks
+      the property fails the test rather than silently corrupting the audit trail.
+    </p>
+
+    <h2>Course Outcomes Addressed</h2>
+
+    <h3>Outcome 5: Security Mindset</h3>
+
+    <p>
+      The course outcome I had circled going into this milestone was Outcome Five, which is
+      about anticipating adversarial exposures and writing code that mitigates them. The shape
+      of this enhancement is in service of that outcome. Plaintext password storage was an
+      exposure. Lack of authorization was an exposure. Lack of attribution was an exposure. The
+      username enumeration defense I built into the login response is an exposure I addressed
+      proactively rather than reactively. Specifically, the server returns the same generic
+      <code>InvalidCredentials</code> response whether the username was unknown or the password
+      was wrong, which means an attacker cannot probe for valid usernames by watching which
+      response comes back. The audit log internally distinguishes the two cases for an admin
+      reviewing the history later, but the client never sees the difference. Failed login
+      attempts are written to the audit log as <code>LOGIN_FAIL</code> rows specifically so an
+      admin can detect brute force activity in the data.
+    </p>
+
+    <h3>Outcome 3: Algorithmic Trade-offs</h3>
+
+    <p>
+      Outcome Three, which concerns designing and evaluating computing solutions using
+      algorithmic principles and trade offs, also applies. Several decisions in this
+      enhancement were trade offs with no clean right answer, and I had to pick one and own
+      the consequences. PBKDF2 instead of BCrypt is one. In process server instead of a cloud
+      database is another. Package visibility instead of database side rules for audit log
+      immutability is a third. In each case I have written the trade off into the code comments
+      and into this narrative rather than letting it pass without explanation.
+    </p>
+
+    <h3>Outcome 4: Well-Founded Techniques and Tools</h3>
+
+    <p>
+      Outcome Four, which addresses using well founded techniques to deliver value, shows up in
+      the choice not to break the existing Repository interface. The whole UI and ViewModel
+      layer from Milestones Two and Three runs unchanged on top of the new
+      <code>RemoteInventoryRepository</code> because I held the interface stable. That is the
+      payoff of putting the repository behind an interface in the first place. The data source
+      can change underneath without touching the UI. I see this kind of stable boundary as the
+      difference between code that is rewritable and code that is rigid.
+    </p>
+
+    <p>
+      I do not believe I changed my course outcome alignment from the Module One plan. The
+      outcomes I expected this enhancement to demonstrate are the ones it actually demonstrates.
+    </p>
+
+    <h2>Reflections and Challenges</h2>
+
+    <h3>Challenge One: Java and Kotlin Interoperability</h3>
+
+    <p>
+      The biggest challenge during the build was the boundary between Java and Kotlin. The
+      existing artifact is mostly Java and the new security and server code is Kotlin. I
+      encountered this problem in two places. The first occurred when
+      <code>InventoryApplication</code>, which is Java, tried to pass
+      <code>System::currentTimeMillis</code> as the clock parameter to
+      <code>InventoryServer</code>, which is Kotlin and expects a function type. Java method
+      references do not auto convert to Kotlin function types. The fix was to add the
+      <code>JvmOverloads</code> annotation to the Kotlin constructor so the Java side could use
+      the production defaults without supplying the clock argument explicitly. The second
+      occurred because Room needs to see annotations on Kotlin entity classes, and the existing
+      build was using <code>annotationProcessor</code> for the Room compiler, which only
+      handles Java sources. I had to switch the build to KSP. Neither of these issues would
+      have appeared in a pure Kotlin or pure Java project. They were specific to the mixed
+      language reality of this artifact, which is the reality found in most working codebases.
+    </p>
+
+    <h3>Challenge Two: What &ldquo;Immutable&rdquo; Means Without Database Rules</h3>
+
+    <p>
+      The second challenge was thinking carefully about what immutable audit log means in a
+      system that does not have database side rules. Every time I thought I had it locked down
+      I would find another path that could in principle write to it. I ended up with a layered
+      approach. The DAO declares no update or delete methods so there is no API for it. The
+      reflection test enforces that property at build time. The server is the only writer and
+      it never offers an editing method. None of those three layers is sufficient on its own,
+      but together they make the property hard to break by accident, which is the realistic
+      security goal for a single device application.
+    </p>
+
+    <h3>Challenge Three: LiveData Without a Main Looper</h3>
+
+    <p>
+      The third challenge involved the Kotlin tests calling into the Java DAOs through fake
+      implementations. The fakes use <code>MutableLiveData</code> to publish updates, which
+      means the choice between <code>setValue</code> and <code>postValue</code> matters
+      depending on whether a main looper is available. JVM unit tests do not have a main
+      looper. The tests would have failed in confusing ways if I had used <code>postValue</code>,
+      so the fakes use <code>setValue</code>, and the tests install
+      <code>InstantTaskExecutorRule</code> to make <code>setValue</code> work synchronously off
+      the main thread. This is the kind of detail that is only learned by running into it.
+    </p>
+
+  </div>
+
+  <div class="page-nav">
+    <a href="../enhancement-2-algorithms/" class="prev">
+      <span class="label">← Previous Enhancement</span>
+      <span class="title">Algorithms and Data Structures</span>
+    </a>
+    <a href="../professional-self-assessment/" class="next">
+      <span class="label">Read Next →</span>
+      <span class="title">Professional Self-Assessment</span>
+    </a>
+  </div>
+
+</main>
+
+<footer>
+  <div>CS 499 Computer Science Capstone · Anteneh Denbel</div>
+  <div><a href="../">Back to portfolio home</a> · <a href="https://github.com/AntenehDenbel/CS499">GitHub</a></div>
+</footer>
+
+</body>
+</html>

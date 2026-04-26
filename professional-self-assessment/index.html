@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Professional Self-Assessment · Anteneh Denbel · CS 499</title>
+<meta name="description" content="Professional self-assessment for the CS 499 Computer Science Capstone ePortfolio by Anteneh Denbel, Southern New Hampshire University.">
+<link rel="stylesheet" href="../styles.css">
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="brand"><a href="../" style="color: inherit;">Anteneh Denbel · CS 499 ePortfolio</a></div>
+  <div class="links">
+    <a href="../">Home</a>
+    <a href="../#code-review">Code Review</a>
+    <a href="../#enhancements">Enhancements</a>
+    <a href="https://github.com/AntenehDenbel/CS499" target="_blank" rel="noopener" class="cta">GitHub</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="eyebrow">Capstone ePortfolio</div>
+  <h1>Professional Self-Assessment</h1>
+  <p class="program">B.S. in Computer Science · Southern New Hampshire University</p>
+</header>
+
+<main class="narrow article">
+  <div class="article-body">
+
+    <p class="lead">
+      I transferred into SNHU two years ago to finish a degree I had started elsewhere. By that
+      point I had already been writing code for a while and had shipped two products as a solo
+      developer for local businesses, including a web application and a mobile app that are
+      still in active use. What I needed from the rest of the program was not a first exposure
+      to software. It was the formal grounding underneath the work I was already doing, along
+      with a portfolio that could make the case to an employer that the grounding was in place.
+    </p>
+
+    <p>
+      This self-assessment is the introduction to that portfolio. The sections below cover what
+      I bring to a team, the choices I made in the capstone, and how the three artifacts that
+      follow fit together. I am looking for my first full-time role in software, and I would
+      rather demonstrate concrete work than make general claims.
+    </p>
+
+    <h2>How I Approached the Capstone</h2>
+
+    <p>
+      All three of my enhancements were built on top of a single artifact: the Warehouse
+      Inventory Management Android application I originally produced in CS 360. I selected one
+      project deliberately. Three disconnected enhancements would have been simpler in some
+      respects, but they would not have demonstrated growth in the way a single evolving project
+      can. With one artifact, a reviewer can read the original CS 360 code and then observe how
+      it changed across Module Three, Module Four, and Module Five into an application with a
+      sound architecture, an indexed read path, and a defensible security model.
+    </p>
+
+    <p>
+      The five sections below cover the skill areas the rubric requires. Each one points at
+      specific work, either inside the capstone or earlier in the degree.
+    </p>
+
+    <h2>Collaborating in a Team Environment</h2>
+
+    <p>
+      Although the two products I shipped outside of school were solo efforts, the program
+      itself gave me direct experience with collaborative software practices. CS 250 introduced
+      the lifecycle artifacts that allow teams to coordinate, including user stories, sprint
+      planning materials, and the kind of written requirements another developer can act on
+      without supervision. CS 320 reinforced the same idea from the testing side. A unit test
+      is a contract with the next person to modify the code, and writing a thorough one is a
+      courtesy to the team as much as it is a check on the author.
+    </p>
+
+    <p>
+      These habits are visible in the capstone artifact. The Module Three rebuild moved every
+      piece of business logic out of the activity classes and into Repository and ViewModel
+      components, and every new class carries documentation describing its role in the
+      architecture. A new contributor joining the project can locate the database code in the
+      data package, the business rules in the viewmodel package, and the user interface in the
+      activities, without requiring a walkthrough. The forty unit tests added across the three
+      milestones are part of the same intent. They are written so that the next person to touch
+      the security architecture or the search index cannot quietly break the properties I
+      shipped.
+    </p>
+
+    <h2>Communicating with Stakeholders</h2>
+
+    <p>
+      The two products I shipped outside of school were both built for clients without technical
+      backgrounds. That work taught me that a stakeholder is rarely interested in a list of
+      changes. They want to understand the reasoning behind the changes, the cost of the
+      alternatives, and the trade-offs being accepted on their behalf. The milestone narratives
+      in this portfolio are written in that register. Where my final implementation diverged
+      from the plan I produced in Module One, I documented the divergence rather than allowing
+      it to pass without explanation. The Module Five narrative is the clearest example. The
+      Module One plan called for Firebase Firestore, BCrypt password hashing, and Firestore
+      security rules to enforce audit-log immutability. The final implementation uses an
+      in-process server architecture, PBKDF2 password hashing, and a layered defense for
+      audit-log immutability. Each substitution is explained in the narrative with the reasoning
+      that produced it.
+    </p>
+
+    <p>
+      The portfolio site that hosts this document is itself an exercise in communication.
+      A recruiter or hiring manager should be able to land on the homepage, develop an accurate
+      impression of the work in approximately thirty seconds, and reach any artifact within
+      two clicks.
+    </p>
+
+    <h2>Data Structures and Algorithms</h2>
+
+    <p>
+      The Module Four enhancement is the strongest technical demonstration in the portfolio.
+      The original CS 360 code answered every read with a linear scan and provided no search
+      functionality whatsoever. To locate a specific item, the user was required to scroll the
+      inventory grid visually. The enhancement introduced a dedicated <code>ItemIndex</code>
+      component that maintains three coordinated structures behind a single coordinator class:
+      a hand-implemented Trie supporting prefix search in O(k + m) time, a HashMap providing
+      O(1) lookup by primary key, and a hand-implemented binary min-heap with a position map
+      providing O(log n) updates by item identifier. The accompanying narrative includes a
+      Big-O complexity table and benchmarked wall-clock measurements at three input sizes
+      (100, 1,000, and 10,000 items). The JUnit suite contains a randomized stress test that
+      verifies equivalence between the indexed and linear strategies before timing them, so
+      any correctness regression surfaces as a test failure rather than as misleading benchmark
+      data.
+    </p>
+
+    <p>
+      Two specific bugs encountered during this work taught me more than any other portion of
+      the milestone. The Trie removal path proved more difficult than its insertion counterpart.
+      The first version failed to prune empty interior nodes, causing memory consumption to
+      grow over the lifetime of the application. The corrected implementation has the recursive
+      helper return a small piece of state to its parent indicating whether pruning is
+      appropriate. The principle generalizes well beyond this specific structure, and CS 260
+      had introduced it in the abstract, but the capstone is where I internalized it through
+      direct application. The second bug appeared in the min-heap. The original
+      <code>siftUpdate</code> implementation only sifted upward, on the assumption that quantity
+      decreases were the realistic case. A randomized stress test exposed the flaw immediately
+      when quantity increases were applied to items at the top of the heap. The fix required
+      a single line, but the broader lesson concerns the value of property-based testing against
+      a reference oracle.
+    </p>
+
+    <h2>Software Engineering and Databases</h2>
+
+    <p>
+      The Module Three enhancement provides the architectural foundation for everything that
+      follows. The application was rebuilt around the Model-View-ViewModel pattern with a
+      Repository interface mediating database access. New business logic was written in Kotlin.
+      The <code>allowMainThreadQueries()</code> anti-pattern was removed. The broken delete path
+      in <code>InventoryAdapter</code> was corrected so that deletions persist. Raw
+      <code>new Thread()</code> calls were replaced with a single-thread executor that
+      serializes writes deterministically. Unit tests were added where the original artifact
+      had none.
+    </p>
+
+    <p>
+      The most important property of this rebuild is that the user interface and ViewModel
+      layer from Modules Three and Four operate without modification on top of the new backend
+      introduced in Module Five. The data source changed, the security architecture changed,
+      and the consumer of the Repository interface did not. That stability is the payoff of
+      placing the repository behind an interface in the first place. Recognizing where to draw
+      a stable boundary, and then maintaining that boundary across rounds of change, is the
+      single most professionally valuable habit the program reinforced for me.
+    </p>
+
+    <p>
+      The database decision in Module Five warrants explicit treatment. The Module One plan
+      named Firebase Firestore as the migration target. Once implementation began, two
+      practical issues became apparent. A Firestore project requires API keys and a service
+      account file in order to be graded, which introduces friction into the evaluation
+      process. Free-tier Firestore accounts are also reclaimed if they sit idle, which would
+      have rendered the artifact short-lived as a portfolio piece. The MySQL and MongoDB
+      options listed in the assignment were considered as well. Neither runs natively on
+      Android, and adopting either would have required deploying a separate backend service
+      without altering the security architecture I intended to demonstrate. The implementation
+      that shipped is an in-process <code>InventoryServer</code> class written in Kotlin,
+      running on a dedicated background thread behind an API boundary the rest of the
+      application cannot bypass. Every public method on the server represents a network
+      endpoint in the equivalent Firestore or REST architecture. Migrating to a real network
+      service later would primarily involve replacing the executor with a Retrofit client.
+      Prior shipping experience with SQLite, combined with the SQL foundation established in
+      DAD 220, made the persistence layer the lowest-risk component of this enhancement.
+    </p>
+
+    <h2>Security Mindset</h2>
+
+    <p>
+      The original CS 360 artifact would not have withstood a brief security review. User
+      passwords were stored in plain text. The <code>User</code> class itself contained the
+      comment, &ldquo;In real app, hash this! But for class, plain is acceptable.&rdquo; The
+      DAO executed a literal <code>WHERE username = :username AND password = :password</code>
+      query against the plaintext column. Every authenticated user held identical privileges.
+      No record was kept of who performed which actions. This was the area where I knew I had
+      the most ground to cover entering the capstone.
+    </p>
+
+    <p>
+      The Module Five enhancement is the response. The new <code>PasswordHasher</code> object
+      computes PBKDF2 with HMAC-SHA-256 over a per-user 16-byte salt at 120,000 iterations,
+      which is the OWASP-recommended floor as of 2023, and verifies hashes using a constant-time
+      comparison so that timing measurements cannot leak the number of leading bytes an attacker
+      has guessed correctly. A <code>Role</code> enum and a <code>Session</code> abstraction
+      implement role-based access control, with the server validating the session role on every
+      request rather than trusting the client&rsquo;s claims. An <code>AuditEntry</code> table
+      records every successful and failed login, every mutation, and every authorization
+      rejection, including actor name, timestamp, action type, and before-and-after snapshots
+      of the affected data. The audit log is append-only by construction. The DAO declares no
+      <code>Update</code> or <code>Delete</code> annotated methods, and a reflection-based
+      build-time test scans the DAO and fails the build if such a method is ever introduced.
+    </p>
+
+    <p>
+      One specific defense in this enhancement is worth highlighting. The login endpoint returns
+      an identical generic <code>InvalidCredentials</code> response regardless of whether the
+      username does not exist or the supplied password is incorrect. This prevents an attacker
+      from probing for valid usernames by observing differences in the response. The audit log
+      distinguishes the two cases internally for an administrator reviewing the history, and
+      failed logins are recorded as <code>LOGIN_FAIL</code> rows so that brute-force activity
+      becomes detectable in the data. CS 405 is where I first learned to model a system around
+      its threat surface rather than its primary feature set, and this enhancement is the most
+      direct application of that perspective in my coursework to date.
+    </p>
+
+    <h2>How the Artifacts Fit Together</h2>
+
+    <p>
+      The portfolio that follows this self-assessment contains three enhancements, all built on
+      a single artifact, presented in the order in which they should be read. Each enhancement
+      assumes the architectural foundation established by the one preceding it, and the
+      cumulative effect is intended to demonstrate growth across all five course outcomes.
+    </p>
+
+    <div class="card accent">
+      <h3 style="font-size: 17px; margin: 0 0 6px;">Enhancement One &middot; Software Design and Engineering</h3>
+      <p style="margin: 0;">
+        Restructures the application around the Model-View-ViewModel pattern with a Repository
+        interface. The persistent delete bug is corrected, the <code>allowMainThreadQueries()</code>
+        anti-pattern is removed, business logic is migrated from Java to Kotlin, and unit tests
+        are introduced where none previously existed. This enhancement establishes the
+        structural foundation that makes the next two possible without rewriting the user
+        interface. The user-facing functionality is unchanged from the CS 360 original, but the
+        underlying architecture now resembles what a working software engineer would expect to
+        find in a maintained codebase.
+      </p>
+    </div>
+
+    <div class="card accent">
+      <h3 style="font-size: 17px; margin: 0 0 6px;">Enhancement Two &middot; Algorithms and Data Structures</h3>
+      <p style="margin: 0;">
+        Introduces the <code>ItemIndex</code> component, which maintains a Trie, a HashMap, and
+        a min-heap as coordinated indices over the inventory data. This enhancement replaces the
+        linear scans the original code performed for every read operation, adds a search feature
+        the original lacked entirely, and ships a JUnit benchmark suite documenting the
+        performance improvement at three input sizes. The Repository interface introduced in
+        Enhancement One remains unchanged, demonstrating that performance work can be added
+        without disturbing the surrounding architecture.
+      </p>
+    </div>
+
+    <div class="card accent">
+      <h3 style="font-size: 17px; margin: 0 0 6px;">Enhancement Three &middot; Databases and Security</h3>
+      <p style="margin: 0;">
+        Rebuilds the data and security layers around a server-mediated architecture. Plaintext
+        password storage is replaced with PBKDF2 hashing. A flat permissions model is replaced
+        with role-based access control enforced server-side. The absence of an audit trail is
+        corrected with an append-only log defended by multiple layers of enforcement. The user
+        interface and the search index from the previous milestones run unchanged on top of the
+        new backend, which is the strongest available evidence that the Repository interface
+        from Enhancement One was drawn at the right boundary.
+      </p>
+    </div>
+
+    <p style="margin-top: 24px;">
+      The mapping from artifacts to course outcomes is deliberate. Enhancement One emphasizes
+      Outcome 1 (collaborative environments), Outcome 2 (professional communication), and
+      Outcome 4 (well-founded techniques and tools). Enhancement Two emphasizes Outcome 3
+      (algorithmic principles and trade-offs), supported by Outcome 4. Enhancement Three
+      emphasizes Outcomes 3, 4, and 5 (security mindset). The code review video and the
+      milestone narratives carry Outcomes 1 and 2 across the entire portfolio. Read together,
+      the three artifacts provide direct evidence for every outcome the program asks the
+      capstone to demonstrate.
+    </p>
+
+  </div>
+</main>
+
+<footer>
+  <div>CS 499 Computer Science Capstone · Anteneh Denbel</div>
+  <div><a href="../">Back to portfolio home</a> · <a href="https://github.com/AntenehDenbel/CS499">GitHub</a></div>
+</footer>
+
+</body>
+</html>

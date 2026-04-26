@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Code Review · CS 499 ePortfolio · Anteneh Denbel</title>
+<meta name="description" content="Code review video walkthrough of the original Warehouse Inventory Management Android application, identifying weaknesses targeted by each capstone enhancement.">
+<link rel="stylesheet" href="../styles.css">
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="brand"><a href="../" style="color: inherit;">Anteneh Denbel · CS 499 ePortfolio</a></div>
+  <div class="links">
+    <a href="../">Home</a>
+    <a href="../professional-self-assessment/">Self-Assessment</a>
+    <a href="../#enhancements">Enhancements</a>
+    <a href="https://github.com/AntenehDenbel/CS499" target="_blank" rel="noopener" class="cta">GitHub</a>
+  </div>
+</nav>
+
+<header class="hero compact">
+  <div class="eyebrow">Module Two Submission</div>
+  <h1>Code Review</h1>
+  <p class="tagline">A walkthrough of the original CS 360 artifact, the weaknesses each enhancement targets, and the engineering proposals behind the three milestones that follow.</p>
+</header>
+
+<main class="narrow article">
+
+  <div class="article-body">
+
+    <!-- Replace the video-placeholder block with the iframe block below once the video is uploaded -->
+    <div class="video-placeholder">
+      <div class="icon">▶</div>
+      <p style="font-size: 17px; color: var(--ink-soft); margin-bottom: 8px;"><strong>Video uploading to YouTube</strong></p>
+      <p style="font-size: 14px; margin: 0;">The embed will appear here once the upload is complete.</p>
+    </div>
+
+    <!--
+    Once uploaded, replace the placeholder above with this:
+
+    <div class="video-wrap">
+      <iframe
+        src="https://www.youtube.com/embed/YOUR_VIDEO_ID"
+        title="CS 499 Code Review · Warehouse Inventory Management"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+        referrerpolicy="strict-origin-when-cross-origin"
+        allowfullscreen>
+      </iframe>
+    </div>
+    -->
+
+    <h2>What the Review Covers</h2>
+
+    <p>
+      The code review is a roughly thirty minute screencast directed at a peer reviewer or
+      engineering manager audience. It walks the existing application through three layers:
+      a brief demonstration of the user-facing behavior on the emulator, a tour of the project
+      structure as it stood at the end of CS 360, and an analytical pass through the code
+      identifying the specific weaknesses each Capstone enhancement was designed to address.
+    </p>
+
+    <h2>Weaknesses Identified</h2>
+
+    <p>
+      Four concrete issues are named in the review and traced back to specific files and lines:
+    </p>
+
+    <div class="card accent">
+      <h3 style="font-size: 17px; margin: 0 0 6px;">Plaintext Password Storage</h3>
+      <p style="margin: 0;">
+        The <code>User</code> class stores passwords as a plain string column. The class itself
+        carries the comment, &ldquo;In real app, hash this! But for class, plain is acceptable.&rdquo;
+        The <code>UserDao</code> compounds the issue with a literal
+        <code>WHERE username = :username AND password = :password</code> query against that
+        plaintext column. Targeted by Enhancement Three.
+      </p>
+    </div>
+
+    <div class="card accent">
+      <h3 style="font-size: 17px; margin: 0 0 6px;">allowMainThreadQueries() Anti-pattern</h3>
+      <p style="margin: 0;">
+        <code>AppDatabase</code> is built with <code>allowMainThreadQueries()</code> enabled,
+        which suppresses Room&rsquo;s safeguard against accidental UI-thread database access.
+        The flag was used to make the original code easier to write but allows real concurrency
+        bugs to ship undetected. Targeted by Enhancement One.
+      </p>
+    </div>
+
+    <div class="card accent">
+      <h3 style="font-size: 17px; margin: 0 0 6px;">Broken Delete Path in InventoryAdapter</h3>
+      <p style="margin: 0;">
+        The delete button removes the item from the adapter&rsquo;s in-memory list and calls
+        <code>notifyItemRemoved</code> on the RecyclerView, making the card disappear from
+        screen, but never actually invokes the DAO. The deletion only looks like it worked.
+        Targeted by Enhancement One.
+      </p>
+    </div>
+
+    <div class="card accent">
+      <h3 style="font-size: 17px; margin: 0 0 6px;">Linear Scans in the Read Path</h3>
+      <p style="margin: 0;">
+        Every read goes through <code>getAllItems()</code> or <code>getZeroStockItems()</code>,
+        each of which scans the full inventory table. The application has no search functionality
+        at all. As inventory grows, this becomes a real performance ceiling. Targeted by
+        Enhancement Two.
+      </p>
+    </div>
+
+    <h2>Engineering Proposals</h2>
+
+    <p>
+      The review closes with a walkthrough of the three planned enhancements as engineering
+      proposals rather than as a list of changes. Each proposal names the Course Outcomes it
+      will demonstrate and the trade-offs it accepts. The proposals were deliberately scoped so
+      that all three could be built on top of a single artifact, allowing a reviewer to read
+      the same project evolve from a monolithic Activity into a tested, indexed, server-mediated
+      application.
+    </p>
+
+    <div class="article-actions" style="margin-top: 24px;">
+      <a href="../enhancement-1-software-engineering/">📖 Enhancement 1: Software Design</a>
+      <a href="../enhancement-2-algorithms/">📖 Enhancement 2: Algorithms</a>
+      <a href="../enhancement-3-databases-security/">📖 Enhancement 3: Databases &amp; Security</a>
+    </div>
+
+  </div>
+
+  <div class="page-nav">
+    <a href="../" class="prev">
+      <span class="label">← Back to</span>
+      <span class="title">Portfolio Home</span>
+    </a>
+    <a href="../enhancement-1-software-engineering/" class="next">
+      <span class="label">Start Reading →</span>
+      <span class="title">Enhancement 1: Software Design</span>
+    </a>
+  </div>
+
+</main>
+
+<footer>
+  <div>CS 499 Computer Science Capstone · Anteneh Denbel</div>
+  <div><a href="../">Back to portfolio home</a> · <a href="https://github.com/AntenehDenbel/CS499">GitHub</a></div>
+</footer>
+
+</body>
+</html>

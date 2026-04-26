@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Anteneh Denbel · CS 499 Computer Science ePortfolio</title>
+<meta name="description" content="CS 499 Computer Science Capstone ePortfolio by Anteneh Denbel. Three enhancements to a Warehouse Inventory Management Android application demonstrating software design, algorithms, and security.">
+<link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="brand"><a href="./" style="color: inherit;">Anteneh Denbel · CS 499 ePortfolio</a></div>
+  <div class="links">
+    <a href="#about">About</a>
+    <a href="./professional-self-assessment/">Self-Assessment</a>
+    <a href="./code-review/">Code Review</a>
+    <a href="#enhancements">Enhancements</a>
+    <a href="https://github.com/AntenehDenbel/CS499" target="_blank" rel="noopener" class="cta">GitHub</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="eyebrow">Computer Science Capstone</div>
+  <h1>Anteneh Denbel</h1>
+  <p class="tagline">A capstone ePortfolio documenting three enhancements to a Warehouse Inventory Management Android application, demonstrating growth in software engineering, algorithms, and security.</p>
+  <p class="program">B.S. in Computer Science · Southern New Hampshire University</p>
+  <div class="hero-actions">
+    <a href="./professional-self-assessment/" class="primary">Read Professional Self-Assessment →</a>
+    <a href="https://github.com/AntenehDenbel/CS499" target="_blank" rel="noopener" class="secondary">View on GitHub</a>
+  </div>
+</header>
+
+<main>
+
+  <section id="about">
+    <h2>About This Portfolio</h2>
+    <div class="section-sub">Overview</div>
+    <div class="card">
+      <p class="lead">
+        This ePortfolio is the capstone of my Bachelor of Science in Computer Science at Southern
+        New Hampshire University. It documents three substantial enhancements to a single artifact,
+        the Warehouse Inventory Management Android application I originally produced in CS 360.
+      </p>
+      <p>
+        Each enhancement targets one of the three core competency areas of the program: software
+        design and engineering, algorithms and data structures, and databases with a security
+        focus. Reading them in order shows the same project evolve from a monolithic Activity into
+        a tested, indexed, and server-mediated application.
+      </p>
+      <p>
+        I transferred into SNHU two years ago to complete a degree I had started elsewhere. By
+        that point I had already shipped two products as a solo developer for local businesses,
+        including a web application and a mobile app that are still in active use. This portfolio
+        is the case I am making for my first full-time role in software engineering.
+      </p>
+      <div class="links">
+        <a href="./professional-self-assessment/">Read the full self-assessment →</a>
+      </div>
+    </div>
+  </section>
+
+  <section id="code-review">
+    <h2>Code Review</h2>
+    <div class="section-sub">Module Two Submission</div>
+    <div class="card">
+      <p>
+        The code review walks the original Warehouse Inventory Management application from the
+        user-facing demo through the file structure, identifies the specific weaknesses each
+        enhancement was designed to address (plaintext password storage in the User class, the
+        <code>allowMainThreadQueries()</code> flag, the broken delete path in
+        <code>InventoryAdapter</code>, the absence of any search or indexing in the read path),
+        and presents the three planned enhancements as engineering proposals.
+      </p>
+      <div class="links">
+        <a href="./code-review/">Watch the code review →</a>
+      </div>
+    </div>
+  </section>
+
+  <section id="artifact">
+    <h2>The Original Artifact</h2>
+    <div class="section-sub">Starting Point</div>
+    <div class="card accent">
+      <div class="meta">
+        <span class="pill">CS 360</span>
+        <span class="pill">Android</span>
+        <span class="pill">Java + Kotlin</span>
+        <span class="pill">SQLite (Room)</span>
+      </div>
+      <h3>Warehouse Inventory Management App</h3>
+      <p>
+        An Android application written primarily in Java, with Kotlin used for Jetpack Compose
+        theming. The app uses Room (SQLite) for local persistence, Material Components for the
+        user interface, a RecyclerView grid of inventory cards, and conditional SMS notifications
+        for low-stock alerts.
+      </p>
+      <p>
+        In its original form the application stored user passwords in plaintext, executed a
+        literal <code>WHERE username = :username AND password = :password</code> query for
+        authentication, performed every read as a linear scan over the full inventory table, and
+        provided no search functionality. The three enhancements below were designed in response
+        to those specific weaknesses.
+      </p>
+      <div class="links">
+        <a href="https://github.com/AntenehDenbel/CS499/tree/original" target="_blank" rel="noopener">📂 Original source (branch)</a>
+        <a href="https://github.com/AntenehDenbel/Mobile-Architecture" target="_blank" rel="noopener">📂 CS 360 repository</a>
+      </div>
+    </div>
+  </section>
+
+  <section id="enhancements">
+    <h2>The Three Enhancements</h2>
+    <div class="section-sub">Built on a Single Artifact, Read in Order</div>
+    <p style="margin-bottom: 32px; color: var(--ink-soft);">
+      Each enhancement assumes the architectural foundation established by the one preceding it.
+      Together they demonstrate growth across all five course outcomes, with the user interface
+      and data layer of each milestone running unchanged on top of the next. Each card below
+      links to the full narrative for that enhancement.
+    </p>
+
+    <div class="card accent" id="enhancement-one">
+      <div class="meta">
+        <span class="pill">Enhancement 1</span>
+        <span class="pill">Software Design &amp; Engineering</span>
+        <span class="pill outcomes">Outcomes 1, 2, 4</span>
+      </div>
+      <h3>MVVM Refactor with Repository Pattern</h3>
+      <p>
+        Restructures the application around the Model-View-ViewModel pattern with a Repository
+        interface mediating database access. The persistent delete bug is corrected, the
+        <code>allowMainThreadQueries()</code> anti-pattern is removed, business logic is migrated
+        from Java to Kotlin, raw <code>new Thread()</code> calls are replaced with a single-thread
+        executor, and unit tests are introduced where none previously existed. This enhancement
+        establishes the structural foundation that makes the next two possible without rewriting
+        the user interface.
+      </p>
+      <div class="links">
+        <a href="./enhancement-1-software-engineering/">📖 Read full narrative →</a>
+        <a href="https://github.com/AntenehDenbel/CS499/tree/enhancement-1-software-engineering" target="_blank" rel="noopener">📂 Code (branch)</a>
+      </div>
+    </div>
+
+    <div class="card accent" id="enhancement-two">
+      <div class="meta">
+        <span class="pill">Enhancement 2</span>
+        <span class="pill">Algorithms &amp; Data Structures</span>
+        <span class="pill outcomes">Outcomes 3, 4</span>
+      </div>
+      <h3>Indexed Read Path with Trie, HashMap, and Min-Heap</h3>
+      <p>
+        Introduces an <code>ItemIndex</code> component that maintains three coordinated
+        structures: a hand-implemented Trie supporting prefix search in O(k + m), a HashMap
+        providing O(1) lookup by primary key, and a hand-implemented binary min-heap with a
+        position map providing O(log n) updates. The accompanying narrative includes a Big-O
+        complexity table and benchmarked wall-clock measurements at three input sizes (100, 1,000,
+        and 10,000 items), with a randomized stress test that verifies equivalence before timing.
+      </p>
+      <div class="links">
+        <a href="./enhancement-2-algorithms/">📖 Read full narrative →</a>
+        <a href="https://github.com/AntenehDenbel/CS499/tree/enhancement-2-algorithms" target="_blank" rel="noopener">📂 Code (branch)</a>
+      </div>
+    </div>
+
+    <div class="card accent" id="enhancement-three">
+      <div class="meta">
+        <span class="pill">Enhancement 3</span>
+        <span class="pill">Databases &amp; Security</span>
+        <span class="pill outcomes">Outcomes 3, 4, 5</span>
+      </div>
+      <h3>Server-Mediated Architecture with PBKDF2, RBAC, and Audit Log</h3>
+      <p>
+        Rebuilds the data and security layers around a server-mediated architecture. Plaintext
+        password storage is replaced with PBKDF2-HMAC-SHA-256 hashing over per-user 16-byte salts
+        at 120,000 iterations. A flat permissions model is replaced with role-based access control
+        enforced server-side. The absence of an audit trail is corrected with an append-only log
+        defended by multiple layers, including a reflection-based build-time test that fails the
+        build if the audit DAO ever gains an Update or Delete method.
+      </p>
+      <div class="links">
+        <a href="./enhancement-3-databases-security/">📖 Read full narrative →</a>
+        <a href="https://github.com/AntenehDenbel/CS499/tree/enhancement-3-databases-security" target="_blank" rel="noopener">📂 Code (branch)</a>
+      </div>
+    </div>
+
+  </section>
+
+  <section id="outcomes">
+    <h2>Course Outcomes</h2>
+    <div class="section-sub">CS 499 Capstone Requirements</div>
+    <p>
+      The artifacts above provide direct evidence for the five course outcomes the capstone is
+      designed to demonstrate.
+    </p>
+    <div class="outcomes-grid">
+      <div class="outcome">
+        <span class="outcome-num">Outcome 1</span>
+        <h4>Collaborative Environments</h4>
+        <p>Documented architecture, Repository boundaries, and forty unit tests that protect the work of future contributors.</p>
+      </div>
+      <div class="outcome">
+        <span class="outcome-num">Outcome 2</span>
+        <h4>Professional Communication</h4>
+        <p>Milestone narratives, the code review video, and this portfolio site itself.</p>
+      </div>
+      <div class="outcome">
+        <span class="outcome-num">Outcome 3</span>
+        <h4>Algorithmic Trade-offs</h4>
+        <p>Trie, HashMap, and min-heap chosen against documented Big-O reasoning and benchmarked at three input sizes.</p>
+      </div>
+      <div class="outcome">
+        <span class="outcome-num">Outcome 4</span>
+        <h4>Innovative Techniques and Tools</h4>
+        <p>MVVM with Repository pattern, Kotlin migration, server-mediated architecture, and reflection-based build-time testing.</p>
+      </div>
+      <div class="outcome">
+        <span class="outcome-num">Outcome 5</span>
+        <h4>Security Mindset</h4>
+        <p>PBKDF2 hashing, role-based access control, append-only audit log, and username-enumeration mitigation.</p>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div>CS 499 Computer Science Capstone · Anteneh Denbel</div>
+  <div><a href="https://github.com/AntenehDenbel/CS499">github.com/AntenehDenbel/CS499</a></div>
+  <div class="footer-meta">Bachelor of Science in Computer Science · Southern New Hampshire University</div>
+</footer>
+
+</body>
+</html>

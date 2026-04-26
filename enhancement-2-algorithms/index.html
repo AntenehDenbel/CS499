@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Enhancement Two · Algorithms and Data Structures · CS 499</title>
+<meta name="description" content="ItemIndex with Trie, HashMap, and min-heap. Algorithms enhancement to a Warehouse Inventory Management Android application.">
+<link rel="stylesheet" href="../styles.css">
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="brand"><a href="../" style="color: inherit;">Anteneh Denbel · CS 499 ePortfolio</a></div>
+  <div class="links">
+    <a href="../">Home</a>
+    <a href="../professional-self-assessment/">Self-Assessment</a>
+    <a href="../code-review/">Code Review</a>
+    <a href="../#enhancements" class="current">Enhancements</a>
+    <a href="https://github.com/AntenehDenbel/CS499" target="_blank" rel="noopener" class="cta">GitHub</a>
+  </div>
+</nav>
+
+<header class="hero compact">
+  <div class="eyebrow">Enhancement 2 · Module Four</div>
+  <h1>Algorithms and Data Structures</h1>
+  <p class="tagline">A Trie, a HashMap, and a binary min-heap, coordinated behind a single index, replacing every linear scan in the read path with a benchmarked alternative.</p>
+</header>
+
+<main class="narrow article">
+
+  <div class="article-actions" style="margin-bottom: 32px;">
+    <a href="https://github.com/AntenehDenbel/CS499/tree/enhancement-2-algorithms" target="_blank" rel="noopener">📂 View enhanced code</a>
+    <a href="https://github.com/AntenehDenbel/CS499/tree/enhancement-1-software-engineering" target="_blank" rel="noopener">📂 View previous milestone</a>
+  </div>
+
+  <div class="card muted" style="margin-bottom: 40px;">
+    <div class="meta">
+      <span class="pill outcomes">Outcomes 3, 4</span>
+      <span class="pill">Java + Kotlin</span>
+      <span class="pill">Trie · HashMap · Min-Heap</span>
+      <span class="pill">JUnit Benchmarks</span>
+    </div>
+    <p style="margin: 0;">
+      <strong>The narrative below is the full Milestone Three submission.</strong> It includes
+      the Big-O complexity summary, the benchmark methodology, the actual measured results at
+      three input sizes, an interpretation of the numbers, the course outcomes addressed, an
+      honest correction to the Module One plan, and reflections on two specific bugs that
+      proved most instructive.
+    </p>
+  </div>
+
+  <div class="article-body">
+
+    <h2>Artifact Background</h2>
+
+    <p>
+      The artifact for this enhancement is the Warehouse Inventory Management Android application
+      I originally built as the Project Three final deliverable in CS 360 (Mobile Architecture
+      and Programming) and re-architected for Milestone Two of CS 499. The starting code for
+      this milestone is the Milestone Two version. It is an Android app written primarily in
+      Java, with Kotlin used for the ViewModels and the Compose theme files, that uses an MVVM
+      architecture with a Repository layer behind an interface, a Room database with both
+      synchronous and LiveData-backed DAO methods, and a small custom Application-scoped service
+      container in place of a full Hilt dependency-injection graph. The user-facing functionality
+      is unchanged from the CS 360 original. Account creation, login, a two-column RecyclerView
+      grid of inventory cards, a bottom sheet for adding items, a second bottom sheet for
+      adjusting quantity with plus and minus buttons, and a low-stock alert path that fires an
+      SMS (or a toast on the emulator) when any item reaches a quantity of zero.
+    </p>
+
+    <p>
+      The version I am submitting for Milestone Three keeps every one of those user-facing
+      features and adds one new one, a search box in the toolbar, while replacing the underlying
+      read paths with three coordinated in-memory data structures. The original code answered
+      every read by scanning a LiveData list linearly. The enhanced version answers searches in
+      O(k + m), id lookups in O(1), and low-stock writes in O(log n), by maintaining a Trie, a
+      HashMap, and a binary min-heap behind a single coordinator class called
+      <code>ItemIndex</code>.
+    </p>
+
+    <h2>Why This Artifact</h2>
+
+    <p>
+      I chose this artifact for the algorithms and data structures category because the original
+      Milestone Two version had a real performance ceiling that a graduating computer science
+      student should be able to recognize and fix. Continuing to use the same project across all
+      three Capstone categories also means a reviewer can see one artifact evolve from a
+      monolithic Activity in CS 360 into an indexed, tested, MVVM application by the end of
+      CS 499.
+    </p>
+
+    <p>
+      The original CS 360 <code>InventoryDao</code> exposed only two queries,
+      <code>getAllItems()</code> and <code>getZeroStockItems()</code>. The first returned every
+      row as a LiveData list. The second returned a full re-scan of the inventory table every
+      time anything changed. There was no search functionality at all. To find a specific SKU,
+      the user had to scroll the grid visually. As long as the warehouse had ten items this was
+      invisible. At a hundred items it was annoying. At a thousand items it would be a blocker.
+      That same linear-scan pattern was also what drove the SMS alert pipeline. Every write
+      triggered a full re-read of the zero-stock subset.
+    </p>
+
+    <h2>What I Built</h2>
+
+    <p>
+      The enhancement adds a new package, <code>com.example.inventoryapp.index</code>, containing
+      three classes:
+    </p>
+
+    <h3>Trie</h3>
+    <p>
+      A hand-written prefix tree keyed on item names. Each node stores the set of items whose
+      names pass through it, which lets prefix searches return matches in O(k + m) time, where
+      k is the length of the search term and m is the number of matches. This is what makes the
+      new SearchView in the toolbar respond character-by-character without ever scanning the
+      full inventory.
+    </p>
+
+    <h3>MinHeap</h3>
+    <p>
+      A hand-written binary min-heap of items keyed on quantity ascending. The heap maintains an
+      auxiliary HashMap from item id to current heap index, which lets <code>siftUpdate</code>
+      on an arbitrary item run in O(log n) instead of O(n). This is the structure that replaces
+      the original WHERE quantity less than or equal to 0 full-table re-scan. Java already ships
+      <code>PriorityQueue</code>, but its <code>remove(Object)</code> is O(n) because it scans
+      the heap array to locate the element. We needed O(log n) update by id, so the position-map
+      design is justified.
+    </p>
+
+    <h3>ItemIndex</h3>
+    <p>
+      The coordinator class. It owns the Trie, the HashMap (for O(1) lookup by primary key), and
+      the MinHeap, and it provides a single API surface (<code>search</code>, <code>findById</code>,
+      <code>lowStockTop</code>, <code>upsert</code>, <code>remove</code>, <code>rebuildFrom</code>)
+      that the ViewModel calls. The hard part of maintaining redundant indices is not building
+      them, it is keeping them consistent under mutation. Every write path in
+      <code>ItemIndex</code> is implemented so that the three structures all reflect the same
+      post-state, or none of them do.
+    </p>
+
+    <p>
+      The <code>InventoryViewModel</code> was updated to put an <code>ItemIndex</code> between
+      the repository and the UI. The ViewModel now exposes <code>visibleItems</code>, a
+      <code>MediatorLiveData</code> that combines the repository&rsquo;s snapshot with the
+      search box&rsquo;s current text and applies the trie filter when the query is non-empty.
+      The Activity adds a SearchView to the toolbar and forwards every keystroke into
+      <code>viewModel.setSearchQuery</code>, which is what makes the type-ahead filter feel
+      instant.
+    </p>
+
+    <h2>Skills Demonstrated</h2>
+
+    <p>The skills I aimed to put on display in this enhancement are:</p>
+
+    <p>
+      <strong>Selecting the right data structure for each access pattern</strong> instead of
+      forcing a single structure to do everything. The three operations the app does most
+      (search, lookup, low-stock) each need a differently shaped index, and a single sorted list
+      cannot serve all three.
+    </p>
+
+    <p>
+      <strong>Hand-implementing a Trie from first principles</strong>, including lazy child-map
+      allocation, case-insensitive normalization, and pruning of empty branches on remove.
+    </p>
+
+    <p>
+      <strong>Hand-implementing a binary min-heap</strong>, including the position map that gives
+      O(log n) update-by-id, which is a non-trivial improvement over Java&rsquo;s built-in
+      <code>PriorityQueue</code>.
+    </p>
+
+    <p>
+      <strong>Reasoning about Big-O trade-offs in both directions.</strong> The index is faster
+      in time but spends additional memory roughly on the order of the sum of all item-name
+      lengths plus a constant per item. For a few thousand SKUs this is a few tens of kilobytes
+      of heap, which is the right trade on Android.
+    </p>
+
+    <p>
+      <strong>Solving the cache-invalidation problem.</strong> Three redundant indices is a
+      classic source of bugs, for example the trie still matching the old name after a rename.
+      The <code>upsert</code> path in <code>ItemIndex</code> removes the previous version of the
+      item from each structure before re-indexing, and a dedicated unit test verifies it.
+    </p>
+
+    <p>
+      <strong>Writing JUnit micro-benchmarks</strong> that produce reportable wall-clock numbers
+      at multiple input sizes (100, 1,000, and 10,000 items), so the Big-O argument is grounded
+      in real measurements rather than asserted in the abstract. The benchmark file also
+      functions as a correctness test. It asserts that the indexed and linear strategies return
+      equivalent results before timing them.
+    </p>
+
+    <h2>Complexity Summary</h2>
+
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Operation</th>
+          <th>Original (linear)</th>
+          <th>Enhanced (indexed)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Search by name prefix</td>
+          <td>O(n), and no UI for it</td>
+          <td>O(k + m) via Trie</td>
+        </tr>
+        <tr>
+          <td>Find by id</td>
+          <td>O(n) full scan</td>
+          <td>O(1) via HashMap</td>
+        </tr>
+        <tr>
+          <td>Low-stock top-N read</td>
+          <td>O(n) per mutation (re-query)</td>
+          <td>O(n log n) per dashboard read; O(log n) per mutation</td>
+        </tr>
+        <tr>
+          <td>Insert / update</td>
+          <td>O(1) DB + O(n) UI re-render</td>
+          <td>O(log n) heap + O(name length) trie</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>Benchmark Methodology and Results</h2>
+
+    <p>
+      The benchmark suite (<code>IndexBenchmarkTest</code>) runs each operation under both
+      strategies for 5,000 warm-up iterations followed by 5,000 timed iterations, at three
+      input sizes (100, 1,000, and 10,000 items). The deterministic seed (42) makes results
+      reproducible across runs. The suite asserts that the indexed and linear strategies return
+      equivalent results before timing them, so a regression in correctness would surface as a
+      test failure rather than a quiet drift in the numbers.
+    </p>
+
+    <p>
+      Results from running
+      <code>./gradlew :app:test --tests "*IndexBenchmarkTest*" --info</code> on my development
+      machine:
+    </p>
+
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>n</th>
+          <th>Operation</th>
+          <th>Linear (ns/op)</th>
+          <th>Indexed (ns/op)</th>
+          <th>Speed-up</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="num">100</td>
+          <td>search by prefix</td>
+          <td class="num">4,842</td>
+          <td class="num">561</td>
+          <td class="num">8.6x</td>
+        </tr>
+        <tr>
+          <td class="num">1,000</td>
+          <td>search by prefix</td>
+          <td class="num">43,760</td>
+          <td class="num">4,056</td>
+          <td class="num">10.8x</td>
+        </tr>
+        <tr>
+          <td class="num">10,000</td>
+          <td>search by prefix</td>
+          <td class="num">553,385</td>
+          <td class="num">106,361</td>
+          <td class="num">5.2x</td>
+        </tr>
+        <tr>
+          <td class="num">100</td>
+          <td>find by id</td>
+          <td class="num">1,493</td>
+          <td class="num">48</td>
+          <td class="num">31.1x</td>
+        </tr>
+        <tr>
+          <td class="num">1,000</td>
+          <td>find by id</td>
+          <td class="num">814</td>
+          <td class="num">34</td>
+          <td class="num">23.9x</td>
+        </tr>
+        <tr>
+          <td class="num">10,000</td>
+          <td>find by id</td>
+          <td class="num">12,455</td>
+          <td class="num">29</td>
+          <td class="num">429.5x</td>
+        </tr>
+        <tr>
+          <td class="num">100</td>
+          <td>low-stock top-10</td>
+          <td class="num">9,367</td>
+          <td class="num">8,269</td>
+          <td class="num">1.1x</td>
+        </tr>
+        <tr>
+          <td class="num">1,000</td>
+          <td>low-stock top-10</td>
+          <td class="num">200,199</td>
+          <td class="num">168,564</td>
+          <td class="num">1.2x</td>
+        </tr>
+        <tr>
+          <td class="num">10,000</td>
+          <td>low-stock top-10</td>
+          <td class="num">1,777,349</td>
+          <td class="num">1,876,379</td>
+          <td class="num">0.9x</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>Three observations are worth pulling out from these numbers.</p>
+
+    <p>
+      The <strong>find-by-id row is the cleanest win</strong>, and it does exactly what the
+      Big-O analysis predicts. The linear cost grows with n (1,493 ns at 100, 12,455 ns at
+      10,000), while the indexed cost stays flat at roughly 30 to 50 nanoseconds regardless of
+      size. By the 10,000-item case the indexed strategy is more than 400 times faster. This is
+      the case for HashMap.
+    </p>
+
+    <p>
+      The <strong>search-by-prefix row is more interesting</strong>. The speedup is real but
+      smaller than I had hoped, and it actually peaks around n = 1,000 rather than continuing
+      to grow at n = 10,000. The reason is that with a synthetic dataset where every item name
+      starts with &ldquo;item-&rdquo;, the prefix &ldquo;item-0&rdquo; matches roughly a tenth
+      of the inventory at every size. Trie search is O(k + m), and m, the number of matches,
+      scales with n. So the indexed strategy is not constant-time on this benchmark, it just
+      has a much smaller constant factor than walking the full list and doing a per-element
+      <code>startsWith</code> check. In a realistic warehouse where prefixes are more selective
+      (a user typing &ldquo;scre&rdquo; probably matches a handful of items, not a thousand),
+      the speedup would be larger. Either way the indexed strategy is meaningfully faster at
+      every size.
+    </p>
+
+    <p>
+      The <strong>low-stock row is essentially flat</strong>, and at n = 10,000 the indexed
+      version is even slightly slower than the linear sort (1.88 ms vs 1.78 ms). This is also
+      exactly what I expected once I corrected my Module One claim about <code>peekTopN</code>
+      &rsquo;s complexity. Both strategies are O(n log n) on the read path, so they end up doing
+      structurally similar amounts of work. The win is on the write path. The original code
+      re-runs the LiveData query (a full table scan) on every mutation. The enhanced code does
+      an O(log n) sift on every mutation, and only pays the sort cost when the dashboard is
+      actually rendered. In normal warehouse use mutations greatly outnumber dashboard reads, so
+      the trade is worth it even though the read-side benchmark does not show it.
+    </p>
+
+    <h2>Course Outcomes Addressed</h2>
+
+    <p>
+      In Module One I planned this enhancement to address Course Outcome 3 (algorithmic
+      principles and trade-offs) primarily, with Outcome 4 (well-founded and innovative tools
+      and techniques) as a supporting outcome. I believe I met both.
+    </p>
+
+    <h3>Outcome 3: Algorithmic Trade-offs</h3>
+    <p>
+      The whole point of this enhancement is choosing data structures deliberately and
+      justifying the resulting trade-offs. The Trie was selected because prefix search is the
+      dominant query a SearchView issues. A HashMap is the standard answer when the access
+      pattern is direct lookup by a primary-key-shaped value. A min-heap is the standard answer
+      when the dominant question is &ldquo;what are the smallest items right now&rdquo;. None of
+      these were chosen because they are popular. Each was chosen because it matches a specific
+      access pattern in this specific app, and each is contrasted explicitly with the linear
+      strategy it replaces. The narrative includes both a Big-O complexity table and a
+      benchmarked results table, the JUnit suite includes a randomized stress test that compares
+      the indexed and linear strategies for equivalence, and the documentation in
+      <code>MinHeap</code> explicitly discusses where the implementation was kept simple at the
+      cost of theoretical optimality, and what the upgrade path looks like.
+    </p>
+
+    <h3>Outcome 4: Well-Founded Techniques and Tools</h3>
+    <p>
+      The enhancement introduces an in-memory client-side index, a technique borrowed from
+      database engines, into a mobile application that originally answered every read with a
+      full table scan. It uses Android Architecture Components correctly. A
+      <code>MediatorLiveData</code> that combines two upstream sources is the idiomatic way to
+      build a derived stream in this stack. And it ships a JUnit benchmark suite that produces
+      reportable numbers, which is a tool the original artifact did not have at all.
+    </p>
+
+    <h2>Correction to the Module One Plan</h2>
+
+    <p>
+      There is one small update relative to my Module One plan. I originally claimed the
+      low-stock dashboard would read in O(log n) on the heap. That is true on the write side but
+      not on the read side as I implemented it. My <code>peekTopN</code> is O(n log n) on the
+      heap copy. I have updated the class-level Javadoc, the complexity summary in this
+      narrative, and the benchmark commentary so the analysis matches the code. The decision to
+      keep <code>peekTopN</code> simple is defended on engineering grounds (mutations greatly
+      outnumber reads, so paying on read is the cheaper trade overall), but I want a reviewer
+      to see that I caught the discrepancy and updated the documentation rather than left the
+      original claim in place.
+    </p>
+
+    <p>
+      I do not believe this milestone fully addresses Outcomes 1, 2, or 5 on its own. Outcome 1
+      (collaborative environments) and Outcome 2 (professional-quality communication) are
+      continuing themes throughout the ePortfolio, supported here by the new package&rsquo;s
+      documentation and by this narrative. Outcome 5 (security mindset) is the explicit focus
+      of the Module Five enhancement, where I will replace plaintext passwords with BCrypt
+      hashes, add role-based access control via Firestore security rules, and introduce an
+      immutable audit log.
+    </p>
+
+    <h2>Reflections</h2>
+
+    <p>
+      Two things stood out while I was building this enhancement, each of which taught me
+      something I expect to use again.
+    </p>
+
+    <h3>Reflection One: The Trie Removal Path</h3>
+    <p>
+      The first was that getting the Trie&rsquo;s removal path right was harder than getting
+      the insertion path right. Insertion is mechanical. Walk the key, allocate nodes lazily,
+      add the item to each node&rsquo;s set. Removal has to do all of that in reverse and then
+      prune empty branches on the way back up so the tree does not bloat over time. I wrote the
+      recursive <code>removeAt</code> helper twice. The first version forgot to prune an
+      interior node when its child became empty, which meant the trie&rsquo;s memory footprint
+      grew monotonically across the lifetime of the app. The fix was to make
+      <code>removeAt</code> return a boolean to its parent indicating whether it could be
+      pruned, and to have the parent both delete the child entry and null out the children map
+      when it became empty. The lesson, that the structure of recursion mirrors the structure
+      of the data, and that returning a small piece of state up the call stack is often cleaner
+      than tracking it in a field, is a generalizable one that I had heard in CS 260 but only
+      really internalized here.
+    </p>
+
+    <h3>Reflection Two: A Subtle Min-Heap Bug</h3>
+    <p>
+      The second was a subtle correctness bug in the <code>MinHeap</code> that the randomized
+      stress test caught and a handful of small examples did not. My initial
+      <code>siftUpdate</code> did only <code>siftUp</code>, on the assumption that the only
+      realistic update was a quantity decrease, because that is what selling stock looks like.
+      The stress test, which applies random quantity updates in both directions, immediately
+      failed. When a top-of-heap item&rsquo;s quantity went up, it stayed at the top of the
+      heap because nothing pushed it down. The fix was a single line, call <code>siftDown</code>
+      before <code>siftUp</code>, but the lesson is bigger. It is about the value of a
+      randomized test against a sorted-list reference oracle. A sample-based test would have
+      continued to pass, because most random samples happen to exercise the path that worked.
+      The randomized test is the one that exposes the assumption I did not realize I was making.
+    </p>
+
+  </div>
+
+  <div class="page-nav">
+    <a href="../enhancement-1-software-engineering/" class="prev">
+      <span class="label">← Previous Enhancement</span>
+      <span class="title">Software Design and Engineering</span>
+    </a>
+    <a href="../enhancement-3-databases-security/" class="next">
+      <span class="label">Next Enhancement →</span>
+      <span class="title">Databases and Security</span>
+    </a>
+  </div>
+
+</main>
+
+<footer>
+  <div>CS 499 Computer Science Capstone · Anteneh Denbel</div>
+  <div><a href="../">Back to portfolio home</a> · <a href="https://github.com/AntenehDenbel/CS499">GitHub</a></div>
+</footer>
+
+</body>
+</html>
